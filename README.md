@@ -9,7 +9,7 @@
 
 ## Quick Start
 
-1. Clone the repository: git clone https://github.com/skip-mev/platform-take-home.git
+1. Clone the repository: git clone https://github.com/haydenrandolph/platform-take-home.git
 2. Navigate to the project directory: cd platform-take-home
 
 
