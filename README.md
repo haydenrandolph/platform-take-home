@@ -17,6 +17,7 @@
 
 ## Initial Setup
 Run the following command to set up your development environment: `make setup`
+PLEASE RUN `source .env.local` AFTER THIS SETUP COMPLETES
 This will:
 1. Set up environment paths (`setup-env`)
    - Creates necessary directories
