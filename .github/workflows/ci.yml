@@ -13,13 +13,11 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
-      - name: Clear cache
-        run: rm -rf ~/.cache/golangci-lint || true
-
       - name: Set up Go
         uses: actions/setup-go@v4
         with:
-          go-version: '1.23'
+          go-version: '1.22'
+          cache: false
 
       - name: Install dependencies
         run: go mod download
