@@ -16,7 +16,7 @@ COPY . .
 # Build the application
 RUN CGO_ENABLED=0 GOOS=linux go build -o /app/server ./cmd/server/main.go
 
-# Final stage
+# Final stage - copy only the binary from previous stage
 FROM alpine:latest
 
 WORKDIR /app
