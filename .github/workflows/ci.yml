@@ -1,4 +1,3 @@
-
 name: CI/CD
 
 on:
@@ -19,15 +18,16 @@ jobs:
         uses: actions/setup-go@v4
         with:
           go-version: '1.23'
-          cache: false  # Disable Go modules cache
 
       - name: Install golangci-lint
         run: |
           curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin v1.54.2
+
       - name: Run golangci-lint
         run: |
           export PATH=$PATH:$(go env GOPATH)/bin
           golangci-lint run --timeout=5m
+
   test:
     needs: lint
     runs-on: ubuntu-latest
@@ -49,9 +49,13 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
-      - name: Extract branch name # feature branch - allows for quick discovery
-        shell: bash
-        run: echo "BRANCH_NAME=$(echo ${GITHUB_REF#refs/heads/} | sed 's/\//-/g')" >> $GITHUB_ENV
+      - name: Determine image tag
+        run: |
+          if [ "${{ github.event_name }}" == "pull_request" ]; then
+            echo "IMAGE_TAG=pr-${{ github.event.pull_request.number }}" >> $GITHUB_ENV
+          else
+            echo "IMAGE_TAG=main" >> $GITHUB_ENV
+          fi
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v2
@@ -63,13 +67,13 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Build and push
+      - name: Build and push Docker image
         uses: docker/build-push-action@v4
         with:
           context: .
           push: true
           tags: |
-            ghcr.io/${{ github.repository }}:${{ env.BRANCH_NAME }}
+            ghcr.io/${{ github.repository }}:${{ env.IMAGE_TAG }}
             ${{ github.ref == 'refs/heads/main' && 'ghcr.io/${{ github.repository }}:latest' || '' }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
@@ -77,8 +81,8 @@ jobs:
       - name: Run Trivy vulnerability scanner
         uses: aquasecurity/trivy-action@master
         with:
-          image-ref: ghcr.io/${{ github.repository }}:${{ env.BRANCH_NAME }}
+          image-ref: ghcr.io/${{ github.repository }}:${{ env.IMAGE_TAG }}
           format: 'table'
-          exit-code: '0' #dont fail if vulnerabilties
+          exit-code: '0' # Do not fail if vulnerabilities
           ignore-unfixed: true
           severity: 'CRITICAL,HIGH'
