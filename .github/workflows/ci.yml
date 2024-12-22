@@ -60,13 +60,15 @@ jobs:
             latest_tag=$(echo "$latest_tag" | awk -F. '{$NF = $NF + 1;} 1' | sed 's/ /./g')
           fi
 
-          # Determine branch name and adjust tagging
+          # Sanitize branch name to create a valid Docker tag
           branch_name="${GITHUB_REF##*/}"
+          sanitized_branch_name=$(echo "$branch_name" | sed 's/[\/]/-/g')
+
           if [[ "$branch_name" == "main" ]]; then
             echo "IMAGE_TAG=$latest_tag" >> $GITHUB_ENV
             echo "ADDITIONAL_TAGS=latest" >> $GITHUB_ENV
           else
-            echo "IMAGE_TAG=$branch_name/$latest_tag" >> $GITHUB_ENV
+            echo "IMAGE_TAG=$sanitized_branch_name/$latest_tag" >> $GITHUB_ENV
           fi
 
       - name: Set up Docker Buildx
