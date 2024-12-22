@@ -46,13 +46,28 @@ jobs:
   build:
     needs: test
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
 
     steps:
       - uses: actions/checkout@v3
 
-      - name: Extract branch name # feature branch - allows for quick discovery
-        shell: bash
-        run: echo "BRANCH_NAME=$(echo ${GITHUB_REF#refs/heads/} | sed 's/\//-/g')" >> $GITHUB_ENV
+      - name: Validate branch name
+        run: |
+          BRANCH_NAME=${GITHUB_REF#refs/heads/}
+          if [[ "$GITHUB_REF" == "refs/heads/main" ]]; then
+            echo "BRANCH_NAME=main" >> $GITHUB_ENV
+          elif [[ $BRANCH_NAME =~ ^(feature|bugfix|hotfix)/[a-z0-9-]+$ ]]; then
+            echo "BRANCH_NAME=$BRANCH_NAME" >> $GITHUB_ENV
+          else
+            echo "Error: Branch name must follow the pattern: feature/*, bugfix/*, or hotfix/*"
+            echo "Examples:"
+            echo "  feature/add-metrics"
+            echo "  bugfix/fix-database-connection"
+            echo "  hotfix/security-patch"
+            exit 1
+          fi
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v2
@@ -80,6 +95,6 @@ jobs:
         with:
           image-ref: ghcr.io/${{ github.repository }}:${{ env.BRANCH_NAME }}
           format: 'table'
-          exit-code: '0' #dont fail if vulnerabilties
+          exit-code: '0'
           ignore-unfixed: true
           severity: 'CRITICAL,HIGH'
