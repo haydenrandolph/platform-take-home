@@ -45,16 +45,28 @@ jobs:
   build:
     needs: test
     runs-on: ubuntu-latest
-
     steps:
       - uses: actions/checkout@v3
 
       - name: Determine image tag
         run: |
-          if [ "${{ github.event_name }}" == "pull_request" ]; then
-            echo "IMAGE_TAG=pr-${{ github.event.pull_request.number }}" >> $GITHUB_ENV
+          git fetch --tags || true
+
+          # Get latest tag or start with v1.0.0 if none exist
+          latest_tag=$(git tag --sort=-v:refname | head -n 1)
+          if [[ -z "$latest_tag" ]]; then
+            latest_tag="v1.0.0"
           else
-            echo "IMAGE_TAG=main" >> $GITHUB_ENV
+            latest_tag=$(echo "$latest_tag" | awk -F. '{$NF = $NF + 1;} 1' | sed 's/ /./g')
+          fi
+
+          # Determine branch name and adjust tagging
+          branch_name="${GITHUB_REF##*/}"
+          if [[ "$branch_name" == "main" ]]; then
+            echo "IMAGE_TAG=$latest_tag" >> $GITHUB_ENV
+            echo "ADDITIONAL_TAGS=latest" >> $GITHUB_ENV
+          else
+            echo "IMAGE_TAG=$branch_name/$latest_tag" >> $GITHUB_ENV
           fi
 
       - name: Set up Docker Buildx
@@ -74,7 +86,7 @@ jobs:
           push: true
           tags: |
             ghcr.io/${{ github.repository }}:${{ env.IMAGE_TAG }}
-            ${{ github.ref == 'refs/heads/main' && 'ghcr.io/${{ github.repository }}:latest' || '' }}
+            ${{ env.ADDITIONAL_TAGS && 'ghcr.io/${{ github.repository }}:latest' || '' }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
