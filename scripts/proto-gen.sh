@@ -1,6 +1,5 @@
 #!/bin/bash
 set -e
-
 echo "Generating proto code..."
 
 # Get the root directory of the project
@@ -24,3 +23,9 @@ for dir in $proto_dirs; do
 done
 
 echo "Proto code generation completed successfully."
+
+# Generate external protocol buffers
+# echo "Generating cosmwasm protos"
+# buf generate buf.build/cosmwasm/wasmd
+
+# move proto files to the right places
