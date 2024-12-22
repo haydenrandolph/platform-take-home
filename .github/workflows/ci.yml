@@ -2,9 +2,11 @@ name: CI/CD
 
 on:
   push:
-    branches: [ main ]
+    branches:
+      - main
   pull_request:
-    branches: [ main ]
+    branches:
+      - main
   workflow_dispatch:
 
 jobs:
@@ -45,17 +47,8 @@ jobs:
   build:
     needs: test
     runs-on: ubuntu-latest
-
     steps:
       - uses: actions/checkout@v3
-
-      - name: Determine image tag
-        run: |
-          if [ "${{ github.event_name }}" == "pull_request" ]; then
-            echo "IMAGE_TAG=pr-${{ github.event.pull_request.number }}" >> $GITHUB_ENV
-          else
-            echo "IMAGE_TAG=main" >> $GITHUB_ENV
-          fi
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v2
@@ -67,21 +60,35 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Build and push Docker image
+      - name: Determine Tag
+        id: tag
+        run: |
+          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
+            # PR Build: Tag with PR number
+            echo "TAG=pr-${{ github.event.number }}" >> $GITHUB_ENV
+          elif [[ "${{ github.ref }}" == "refs/heads/main" ]]; then
+            # Main Build: Tag with 'latest'
+            echo "TAG=latest" >> $GITHUB_ENV
+          else
+            # Fallback: Use commit SHA
+            SHORT_SHA=${GITHUB_SHA::7}
+            echo "TAG=${SHORT_SHA}" >> $GITHUB_ENV
+          fi
+
+      - name: Build and Push Docker Image
         uses: docker/build-push-action@v4
         with:
           context: .
           push: true
           tags: |
-            ghcr.io/${{ github.repository }}:${{ env.IMAGE_TAG }}
-            ${{ github.ref == 'refs/heads/main' && 'ghcr.io/${{ github.repository }}:latest' || '' }}
+            ghcr.io/${{ github.repository }}:${{ env.TAG }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-      - name: Run Trivy vulnerability scanner
+      - name: Run Trivy Vulnerability Scanner
         uses: aquasecurity/trivy-action@master
         with:
-          image-ref: ghcr.io/${{ github.repository }}:${{ env.IMAGE_TAG }}
+          image-ref: ghcr.io/${{ github.repository }}:${{ env.TAG }}
           format: 'table'
           exit-code: '0' # Do not fail if vulnerabilities
           ignore-unfixed: true
