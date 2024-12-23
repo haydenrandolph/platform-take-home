@@ -4,8 +4,8 @@ set -e
 echo "Running proto generation before push..."
 make proto
 
-# Stage the generated files
-git add proto/*.pb.go api/types/
+# Update the paths to match where files are actually generated
+git add api/types/*.pb.go api/mocks/*.go
 
 # Check if there are any changes
 if ! git diff --cached --quiet; then
