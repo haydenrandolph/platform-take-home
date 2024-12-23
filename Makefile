@@ -54,7 +54,7 @@ setup-proto-tools:
 	GOBIN=$(GO_BIN) go install google.golang.org/protobuf/cmd/protoc-gen-go@v1.31.0
 	GOBIN=$(GO_BIN) go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@v1.3.0
 	GOBIN=$(GO_BIN) go install github.com/grpc-ecosystem/grpc-gateway/v2/protoc-gen-grpc-gateway@v2.18.1
-	GOBIN=$(GO_BIN) go install github.com/shengyjs/protoc-gen-go-grpc-mock@latest
+	GOBIN=$(GO_BIN) go install github.com/golang/mock/mockgen@latest
 
 # Lint the code
 lint:
@@ -71,7 +71,13 @@ format:
 	gofmt -w $(GOFILES)
 	$(GO_BIN)/goimports -w $(GOFILES)
 
-# Generate proto files
+# target for generating mocks
+generate-mocks:
+	@echo "Generating mocks..."
+	@mkdir -p api/types/mocks
+	$(GO_BIN)/mockgen -source=./api/types/api_grpc.pb.go -destination=./api/types/mocks/api_grpc_mock.pb.go.go -package=mocks
+
+# target to run proto script + mock generation
 proto:
 	@echo "Generating proto files..."
 	@if ! command -v buf >/dev/null 2>&1; then \
@@ -79,6 +85,7 @@ proto:
 		$(MAKE) setup-buf; \
 	fi
 	./scripts/proto-gen.sh
+	$(MAKE) generate-mocks
 
 # Build docker image
 docker:

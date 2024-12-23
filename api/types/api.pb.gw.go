@@ -105,7 +105,11 @@ func request_TakeHomeService_CreateItem_0(ctx context.Context, marshaler runtime
 	var protoReq CreateItemRequest
 	var metadata runtime.ServerMetadata
 
-	if err := marshaler.NewDecoder(req.Body).Decode(&protoReq); err != nil && err != io.EOF {
+	newReader, berr := utilities.IOReaderFactory(req.Body)
+	if berr != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", berr)
+	}
+	if err := marshaler.NewDecoder(newReader()).Decode(&protoReq); err != nil && err != io.EOF {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 
@@ -118,7 +122,11 @@ func local_request_TakeHomeService_CreateItem_0(ctx context.Context, marshaler r
 	var protoReq CreateItemRequest
 	var metadata runtime.ServerMetadata
 
-	if err := marshaler.NewDecoder(req.Body).Decode(&protoReq); err != nil && err != io.EOF {
+	newReader, berr := utilities.IOReaderFactory(req.Body)
+	if berr != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", berr)
+	}
+	if err := marshaler.NewDecoder(newReader()).Decode(&protoReq); err != nil && err != io.EOF {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 
@@ -131,7 +139,6 @@ func local_request_TakeHomeService_CreateItem_0(ctx context.Context, marshaler r
 // UnaryRPC     :call TakeHomeServiceServer directly.
 // StreamingRPC :currently unsupported pending https://github.com/grpc/grpc-go/issues/906.
 // Note that using this registration option will cause many gRPC library features to stop working. Consider using RegisterTakeHomeServiceHandlerFromEndpoint instead.
-// GRPC interceptors will not work for this type of registration. To use interceptors, you must use the "runtime.WithMiddlewares" option in the "runtime.NewServeMux" call.
 func RegisterTakeHomeServiceHandlerServer(ctx context.Context, mux *runtime.ServeMux, server TakeHomeServiceServer) error {
 
 	mux.Handle("GET", pattern_TakeHomeService_GetItems_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
@@ -215,21 +222,21 @@ func RegisterTakeHomeServiceHandlerServer(ctx context.Context, mux *runtime.Serv
 // RegisterTakeHomeServiceHandlerFromEndpoint is same as RegisterTakeHomeServiceHandler but
 // automatically dials to "endpoint" and closes the connection when "ctx" gets done.
 func RegisterTakeHomeServiceHandlerFromEndpoint(ctx context.Context, mux *runtime.ServeMux, endpoint string, opts []grpc.DialOption) (err error) {
-	conn, err := grpc.NewClient(endpoint, opts...)
+	conn, err := grpc.DialContext(ctx, endpoint, opts...)
 	if err != nil {
 		return err
 	}
 	defer func() {
 		if err != nil {
 			if cerr := conn.Close(); cerr != nil {
-				grpclog.Errorf("Failed to close conn to %s: %v", endpoint, cerr)
+				grpclog.Infof("Failed to close conn to %s: %v", endpoint, cerr)
 			}
 			return
 		}
 		go func() {
 			<-ctx.Done()
 			if cerr := conn.Close(); cerr != nil {
-				grpclog.Errorf("Failed to close conn to %s: %v", endpoint, cerr)
+				grpclog.Infof("Failed to close conn to %s: %v", endpoint, cerr)
 			}
 		}()
 	}()
@@ -247,7 +254,7 @@ func RegisterTakeHomeServiceHandler(ctx context.Context, mux *runtime.ServeMux, 
 // to "mux". The handlers forward requests to the grpc endpoint over the given implementation of "TakeHomeServiceClient".
 // Note: the gRPC framework executes interceptors within the gRPC handler. If the passed in "TakeHomeServiceClient"
 // doesn't go through the normal gRPC flow (creating a gRPC client etc.) then it will be up to the passed in
-// "TakeHomeServiceClient" to call the correct interceptors. This client ignores the HTTP middlewares.
+// "TakeHomeServiceClient" to call the correct interceptors.
 func RegisterTakeHomeServiceHandlerClient(ctx context.Context, mux *runtime.ServeMux, client TakeHomeServiceClient) error {
 
 	mux.Handle("GET", pattern_TakeHomeService_GetItems_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {

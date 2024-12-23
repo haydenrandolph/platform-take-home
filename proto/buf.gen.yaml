@@ -14,8 +14,3 @@ plugins:
     out: .
     opt:
       - paths=source_relative
-
-  - name: go-grpc-mock
-    out: ./mocks
-    opt:
-      - paths=source_relative

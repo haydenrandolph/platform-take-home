@@ -22,6 +22,17 @@ for dir in $proto_dirs; do
     done
 done
 
+# Remove existing api/types directory if it exists
+rm -rf ../api/types || true
+
+# Create api/types directory
+mkdir -p ../api/types
+
+# Move all generated files to api/types
+find . -name "*.pb.go" -o -name "*.pb.gw.go" | while read file; do
+    mv "$file" "../api/types/"
+done
+
 echo "Proto code generation completed successfully."
 
 # Generate external protocol buffers
